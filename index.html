@@ -69,6 +69,15 @@ input[type=color]{padding:2px;width:44px;height:40px;cursor:pointer}
 </style>
 </head>
 <body>
+ <div id="panel-logowania" style="padding: 12px; border: 1px solid #ccc; margin-bottom: 16px;">
+  <span id="status-logowania">Sprawdzanie logowania...</span>
+  <form id="form-logowania" style="margin-top: 8px; display: none;">
+    <input type="email" id="login-email" placeholder="Twój e-mail" required />
+    <input type="password" id="login-haslo" placeholder="Hasło" required />
+    <button type="submit">Zaloguj</button>
+  </form>
+  <button id="btn-wyloguj" type="button" style="display: none; margin-left: 8px;">Wyloguj</button>
+</div>
 <main id="app"></main>
 <div id="rest" hidden></div><div id="rails"></div><div id="railsR"></div>
 <nav id="nav"></nav>
@@ -466,7 +475,7 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
     getFirestore, doc, setDoc, onSnapshot
   } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
   import {
-    getAuth, signInWithEmailAndPassword, onAuthStateChanged
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -487,30 +496,82 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
   const UID = "yXAvSnotJJhUsAJpV7JrcZ6Xbw03";
   const docRef = doc(db, "users", UID, "app", "treningi");
 
-  // Logowanie na Twoje konto utworzone w Firebase Authentication -> Users
-  window.zaloguj = async function (email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
+  const formEl = document.getElementById("form-logowania");
+  const emailEl = document.getElementById("login-email");
+  const hasloEl = document.getElementById("login-haslo");
+  const statusEl = document.getElementById("status-logowania");
+  const btnWyloguj = document.getElementById("btn-wyloguj");
 
+  let odswiezCallback = null;
+  let unsubscribeSnapshot = null;
+
+  // Obsługa wysłania formularza logowania
+  formEl.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusEl.textContent = "Logowanie...";
+    try {
+      await signInWithEmailAndPassword(auth, emailEl.value.trim(), hasloEl.value);
+      hasloEl.value = "";
+    } catch (err) {
+      statusEl.textContent = "Błąd logowania: sprawdź e-mail i hasło.";
+    }
+  });
+
+  // Obsługa wylogowania
+  btnWyloguj.addEventListener("click", async () => {
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
+      unsubscribeSnapshot = null;
+    }
+    await signOut(auth);
+  });
+
+  function podlaczNasluchiwanie() {
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+    unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
+      if (snap.exists() && snap.data().dane !== undefined) {
+        localStorage.setItem("treningi_lokalne", JSON.stringify(snap.data().dane));
+        if (typeof odswiezCallback === "function") {
+          odswiezCallback(snap.data().dane);
+        }
+      }
+    });
+  }
+
+  // Reakcja na zmianę stanu zalogowania (działa też po odświeżeniu strony)
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.uid === UID) {
+      statusEl.textContent = `Zalogowano jako ${user.email} (chmura aktywna)`;
+      formEl.style.display = "none";
+      btnWyloguj.style.display = "inline-block";
+      podlaczNasluchiwanie();
+    } else if (user && user.uid !== UID) {
+      statusEl.textContent = "Zalogowano na inne konto bez uprawnień do tych danych.";
+      formEl.style.display = "block";
+      btnWyloguj.style.display = "none";
+    } else {
+      statusEl.textContent = "Nie jesteś zalogowany – dane zapisują się tylko lokalnie.";
+      formEl.style.display = "block";
+      btnWyloguj.style.display = "none";
+    }
+  });
+
+  // Wywołaj w swoim kodzie, gdy zapisujesz treningi
   window.zapiszDoChmury = async function (dane) {
     localStorage.setItem("treningi_lokalne", JSON.stringify(dane));
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || auth.currentUser.uid !== UID) return;
     await setDoc(docRef, {
       dane,
       aktualizacja: new Date().toISOString()
     }, { merge: true });
   };
 
+  // Wywołaj przy starcie aplikacji, przekazując funkcję odświeżającą listę w widoku
   window.nasluchujChmury = function (odswiezWidok) {
-    return onAuthStateChanged(auth, (user) => {
-      if (!user || user.uid !== UID) return;
-      onSnapshot(docRef, (snap) => {
-        if (snap.exists() && snap.data().dane !== undefined) {
-          localStorage.setItem("treningi_lokalne", JSON.stringify(snap.data().dane));
-          odswiezWidok(snap.data().dane);
-        }
-      });
-    });
+    odswiezCallback = odswiezWidok;
+    if (auth.currentUser && auth.currentUser.uid === UID) {
+      podlaczNasluchiwanie();
+    }
   };
 </script>
 </body>

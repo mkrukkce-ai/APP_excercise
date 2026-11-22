@@ -465,6 +465,9 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
   import {
     getFirestore, doc, setDoc, onSnapshot
   } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCPDr2wtuuYcy1kCvS1BlfPoTGiGMu3D9A",
@@ -479,26 +482,34 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
+  const auth = getAuth(app);
 
-  // Dokument w Firestore, w którym trzymane są dane treningowe
-  const docRef = doc(db, "treningi", "glowny-dziennik");
+  const UID = "yXAvSnotJJhUsAJpV7JrcZ6Xbw03";
+  const docRef = doc(db, "users", UID, "app", "treningi");
 
-  // Wywołaj w swoim kodzie zawsze, gdy zapisujesz/zmieniasz treningi
+  // Logowanie na Twoje konto utworzone w Firebase Authentication -> Users
+  window.zaloguj = async function (email, password) {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+
   window.zapiszDoChmury = async function (dane) {
     localStorage.setItem("treningi_lokalne", JSON.stringify(dane));
+    if (!auth.currentUser) return;
     await setDoc(docRef, {
       dane,
       aktualizacja: new Date().toISOString()
     }, { merge: true });
   };
 
-  // Wywołaj przy starcie aplikacji, aby odbierać zmiany z innych urządzeń
   window.nasluchujChmury = function (odswiezWidok) {
-    return onSnapshot(docRef, (snap) => {
-      if (snap.exists() && snap.data().dane !== undefined) {
-        localStorage.setItem("treningi_lokalne", JSON.stringify(snap.data().dane));
-        odswiezWidok(snap.data().dane);
-      }
+    return onAuthStateChanged(auth, (user) => {
+      if (!user || user.uid !== UID) return;
+      onSnapshot(docRef, (snap) => {
+        if (snap.exists() && snap.data().dane !== undefined) {
+          localStorage.setItem("treningi_lokalne", JSON.stringify(snap.data().dane));
+          odswiezWidok(snap.data().dane);
+        }
+      });
     });
   };
 </script>

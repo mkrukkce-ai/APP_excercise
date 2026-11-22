@@ -542,47 +542,6 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
   function podlaczNasluchiwanie() {
     if (unsubscribeSnapshot) unsubscribeSnapshot();
     unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
-      if (snap.exists() && snap.data().dane !== undefined) {
-        localStorage.setItem("treningi_lokalne", JSON.stringify(snap.data().dane));
-        if (typeof odswiezCallback === "function") {
-          odswiezCallback(snap.data().dane);
-        }
-      }
-    });
-  }
-
-  // Reakcja na zmianę stanu zalogowania (działa też po odświeżeniu strony)
-  onAuthStateChanged(auth, (user) => {
-    if (user && user.uid === UID) {
-      statusEl.textContent = `Zalogowano jako ${user.email} (chmura aktywna)`;
-      formEl.style.display = "none";
-      btnWyloguj.style.display = "inline-block";
-      podlaczNasluchiwanie();
-    } else if (user && user.uid !== UID) {
-      statusEl.textContent = "Zalogowano na inne konto bez uprawnień do tych danych.";
-      formEl.style.display = "block";
-      btnWyloguj.style.display = "none";
-    } else {
-      statusEl.textContent = "Nie jesteś zalogowany – dane zapisują się tylko lokalnie.";
-      formEl.style.display = "block";
-      btnWyloguj.style.display = "none";
-    }
-  });
-
-  // Wywołaj w swoim kodzie, gdy zapisujesz treningi
-  window.zapiszDoChmury = async function (dane) {
-    const jsonDane = JSON.stringify(dane);
-    localStorage.setItem("plan12v1", jsonDane);
-    if (!auth.currentUser || auth.currentUser.uid !== UID) return;
-    await setDoc(docRef, {
-      daneJson: jsonDane,
-      aktualizacja: new Date().toISOString()
-    }, { merge: true });
-  };
-
-  function podlaczNasluchiwanie() {
-    if (unsubscribeSnapshot) unsubscribeSnapshot();
-    unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
       if (!snap.exists()) return;
       const raw = snap.data();
       let parsowane = null;
@@ -606,6 +565,40 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
       }
     });
   }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.uid === UID) {
+      statusEl.textContent = `Zalogowano jako ${user.email} (chmura aktywna)`;
+      formEl.style.display = "none";
+      btnWyloguj.style.display = "inline-block";
+      podlaczNasluchiwanie();
+    } else if (user && user.uid !== UID) {
+      statusEl.textContent = "Zalogowano na inne konto bez uprawnień do tych danych.";
+      formEl.style.display = "block";
+      btnWyloguj.style.display = "none";
+    } else {
+      statusEl.textContent = "Nie jesteś zalogowany – dane zapisują się tylko lokalnie.";
+      formEl.style.display = "block";
+      btnWyloguj.style.display = "none";
+    }
+  });
+
+  window.zapiszDoChmury = async function (dane) {
+    const jsonDane = JSON.stringify(dane);
+    localStorage.setItem("plan12v1", jsonDane);
+    if (!auth.currentUser || auth.currentUser.uid !== UID) return;
+    await setDoc(docRef, {
+      daneJson: jsonDane,
+      aktualizacja: new Date().toISOString()
+    }, { merge: true });
+  };
+
+  window.nasluchujChmury = function (odswiezWidok) {
+    odswiezCallback = odswiezWidok;
+    if (auth.currentUser && auth.currentUser.uid === UID) {
+      podlaczNasluchiwanie();
+    }
+  };
 </script>
 </body>
 </html>

@@ -459,5 +459,28 @@ function render(){const v={today:vToday,plan:()=>edv==="n"?vNut():edv==="w"?vWee
 migDone();migT();render();
 if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRest,250);tickRest()}else if(S.rl){S.rl=null;save()}
 </script>
+ <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCPDr2wtuuYcy1kCvS1BlfPoTGiGMu3D9A",
+    authDomain: "cwiczenia-1a033.firebaseapp.com",
+    projectId: "cwiczenia-1a033",
+    storageBucket: "cwiczenia-1a033.firebasestorage.app",
+    messagingSenderId: "614608816633",
+    appId: "1:614608816633:web:bd508c935016a062769528",
+    measurementId: "G-9SSFBYTH3G"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 </body>
 </html>

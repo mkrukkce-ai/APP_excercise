@@ -460,14 +460,12 @@ migDone();migT();render();
 if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRest,250);tickRest()}else if(S.rl){S.rl=null;save()}
 </script>
  <script type="module">
-  // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  import {
+    getFirestore, doc, setDoc, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
     apiKey: "AIzaSyCPDr2wtuuYcy1kCvS1BlfPoTGiGMu3D9A",
     authDomain: "cwiczenia-1a033.firebaseapp.com",
@@ -478,9 +476,31 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
     measurementId: "G-9SSFBYTH3G"
   };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // Dokument w Firestore, w którym trzymane są dane treningowe
+  const docRef = doc(db, "treningi", "glowny-dziennik");
+
+  // Wywołaj w swoim kodzie zawsze, gdy zapisujesz/zmieniasz treningi
+  window.zapiszDoChmury = async function (dane) {
+    localStorage.setItem("treningi_lokalne", JSON.stringify(dane));
+    await setDoc(docRef, {
+      dane,
+      aktualizacja: new Date().toISOString()
+    }, { merge: true });
+  };
+
+  // Wywołaj przy starcie aplikacji, aby odbierać zmiany z innych urządzeń
+  window.nasluchujChmury = function (odswiezWidok) {
+    return onSnapshot(docRef, (snap) => {
+      if (snap.exists() && snap.data().dane !== undefined) {
+        localStorage.setItem("treningi_lokalne", JSON.stringify(snap.data().dane));
+        odswiezWidok(snap.data().dane);
+      }
+    });
+  };
 </script>
 </body>
 </html>

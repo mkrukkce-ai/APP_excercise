@@ -115,7 +115,15 @@ function save(){
   }
 }
 let tab="today",view=null,form=null,ed=null;
-
+if(typeof window.nasluchujChmury==="function"){
+  window.nasluchujChmury((daneZChmury)=>{
+    if(!daneZChmury || typeof daneZChmury!=="object") return;
+    S = daneZChmury;
+    ensure();
+    try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
+    if(typeof render==="function") render();
+  });
+}
 
 function cur(){for(let i=0;i<DAYS;i++)if(!dayDone(i))return i;return DAYS}
 function lastDone(){let m=null;for(const k in S.dd)if(!m||S.dd[k]>m)m=S.dd[k];return m}

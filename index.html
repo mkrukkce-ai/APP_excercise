@@ -571,21 +571,41 @@ if(S.rl&&S.rl.end>Date.now()){rt={end:S.rl.end,lock:true};rti=setInterval(tickRe
 
   // Wywołaj w swoim kodzie, gdy zapisujesz treningi
   window.zapiszDoChmury = async function (dane) {
-    localStorage.setItem("treningi_lokalne", JSON.stringify(dane));
+    const jsonDane = JSON.stringify(dane);
+    localStorage.setItem("plan12v1", jsonDane);
     if (!auth.currentUser || auth.currentUser.uid !== UID) return;
     await setDoc(docRef, {
-      dane,
+      daneJson: jsonDane,
       aktualizacja: new Date().toISOString()
     }, { merge: true });
   };
 
-  // Wywołaj przy starcie aplikacji, przekazując funkcję odświeżającą listę w widoku
-  window.nasluchujChmury = function (odswiezWidok) {
-    odswiezCallback = odswiezWidok;
-    if (auth.currentUser && auth.currentUser.uid === UID) {
-      podlaczNasluchiwanie();
-    }
-  };
+  function podlaczNasluchiwanie() {
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+    unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
+      if (!snap.exists()) return;
+      const raw = snap.data();
+      let parsowane = null;
+
+      if (typeof raw.daneJson === "string") {
+        try {
+          parsowane = JSON.parse(raw.daneJson);
+        } catch (e) {
+          console.error("Błąd odczytu JSON z chmury:", e);
+          return;
+        }
+      } else if (raw.dane !== undefined) {
+        parsowane = raw.dane;
+      }
+
+      if (parsowane !== null && parsowane !== undefined) {
+        localStorage.setItem("plan12v1", JSON.stringify(parsowane));
+        if (typeof odswiezCallback === "function") {
+          odswiezCallback(parsowane);
+        }
+      }
+    });
+  }
 </script>
 </body>
 </html>

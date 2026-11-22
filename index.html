@@ -108,7 +108,12 @@ const DT=[{id:"sztanga",name:"Sztanga",color:"#e03131"},{id:"hantle",name:"Hantl
 const RN={"Góra A": "Góra ciała: klatka i plecy", "Dół A": "Nogi: przysiad i wykroki", "Góra B": "Góra ciała: plecy i ramiona", "Dół B": "Nogi: martwy ciąg i pośladki"};
 function ensure(){S.act=S.act||{};S.extra=S.extra||{};S.ov=S.ov||{};S.ns=S.ns||{};S.rr=S.rr||{};S.sk=S.sk||{};S.ui=S.ui||{};S.pov=S.pov||{};(()=>{const f=t=>{if(RN[t.n])t.n=RN[t.n]};if(S.plan)S.plan.slots.forEach(f);for(const k in S.pov)f(S.pov[k])})();S.plan=S.plan||{slots:TPL.map(t=>({n:t.n,type:slotType(t),ex:JSON.parse(JSON.stringify(t.ex))})),kgPct:2.5,kmStep:.2};S.nov=S.nov||{};S.meal=S.meal||{};S.nbase=S.nbase||S.plan.slots.map(t=>defNut(t.type));seedA();seedB();seedC();seedR();S.rest=S.rest||{ex:30,round:90};S.tools=S.tools||JSON.parse(JSON.stringify(DT))}ensure();
 if(!S.w5){for(const k in S.water)S.water[k]=Math.min(4,Math.round(S.water[k]/2));S.w5=1}
-function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function save(){
+  try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
+  if(typeof window.zapiszDoChmury==="function"){
+    window.zapiszDoChmury(S);
+  }
+}
 let tab="today",view=null,form=null,ed=null;
 
 
